@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MovieHub — All Movies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="marquee">
+  <div class="marquee-inner">
+    <a href="index.html" class="brand">Movie<span class="accent">Hub</span></a>
+    <nav class="tabs">
+      <a href="index.html">Dashboard</a>
+      <a href="watchlist.html">Watchlist</a>
+      <a href="movie-form.html">Add Movie</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="page-heading">
+    <div>
+      <h2>Watchlist</h2>
+      <p class="sub">Every movie you've added.</p>
+    </div>
+    <a href="movie-form.html" class="btn btn-gold">+ Add Movie</a>
+  </div>
+
+  <div class="filter-row" id="filterRow">
+    <button data-filter="all" class="active">All</button>
+    <button data-filter="to-watch">To Watch</button>
+    <button data-filter="watching">Watching</button>
+    <button data-filter="watched">Watched</button>
+  </div>
+
+  <div id="movieList"></div>
+</main>
+
+<script src="app.js"></script>
+<script>
+  let currentFilter = "all";
+
+  async function render() {
+    const movies = (await getMovies()).filter(
+      (m) => currentFilter === "all" || m.status === currentFilter
+    );
+    const listEl = document.getElementById("movieList");
+
+    if (movies.length === 0) {
+      listEl.innerHTML = `
+        <div class="empty-state">
+          <p>No movies here yet.</p>
+          <a href="movie-form.html" class="btn btn-gold">+ Add Movie</a>
+        </div>`;
+      return;
+    }
+
+    listEl.innerHTML = movies
+      .map(
+        (m) => `
+      <div class="movie-row">
+        ${posterTile(m)}
+        <div class="movie-info">
+          <div class="title">${escapeHtml(m.title)}</div>
+          <div class="meta">${escapeHtml(m.genre || "—")} · ${m.year || "—"}</div>
+        </div>
+        <span class="rating-stars">${starString(m.rating)}</span>
+        <span class="badge ${m.status}">${statusLabel(m.status)}</span>
+        <div class="row-actions">
+          <a class="btn btn-small" href="movie-form.html?id=${m.id}">Edit</a>
+          <button class="btn btn-small btn-danger" onclick="handleDelete('${m.id}')">Delete</button>
+        </div>
+      </div>`
+      )
+      .join("");
+  }
+
+  async function handleDelete(id) {
+    const movie = await getMovieById(id);
+    if (!movie) return;
+    if (confirm(`Remove "${movie.title}" from your watchlist?`)) {
+      await deleteMovie(id);
+      render();
+    }
+  }
+
+  document.getElementById("filterRow").addEventListener("click", (e) => {
+    if (e.target.tagName !== "BUTTON") return;
+    currentFilter = e.target.dataset.filter;
+    document
+      .querySelectorAll("#filterRow button")
+      .forEach((b) => b.classList.remove("active"));
+    e.target.classList.add("active");
+    render();
+  });
+
+  document.addEventListener("DOMContentLoaded", render);
+</script>
+
+</body>
+</html>

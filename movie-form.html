@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MovieHub — Add / Edit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="marquee">
+  <div class="marquee-inner">
+    <a href="index.html" class="brand">Movie<span class="accent">Hub</span></a>
+    <nav class="tabs">
+      <a href="index.html">Dashboard</a>
+      <a href="watchlist.html">Watchlist</a>
+      <a href="movie-form.html">Add Movie</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="page-heading">
+    <div>
+      <h2 id="formTitle">Add a Movie</h2>
+      <p class="sub" id="formSub">Add a title to your watchlist.</p>
+    </div>
+  </div>
+
+  <form class="form-card" id="movieForm">
+    <div class="field">
+      <label for="title">Title</label>
+      <input type="text" id="title" required placeholder="e.g. Parasite" />
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="genre">Genre</label>
+        <select id="genre">
+          <option value="">Select a genre</option>
+          <option value="Action">Action</option>
+          <option value="Adventure">Adventure</option>
+          <option value="Animation">Animation</option>
+          <option value="Comedy">Comedy</option>
+          <option value="Crime">Crime</option>
+          <option value="Documentary">Documentary</option>
+          <option value="Drama">Drama</option>
+          <option value="Fantasy">Fantasy</option>
+          <option value="Horror">Horror</option>
+          <option value="Musical">Musical</option>
+          <option value="Mystery">Mystery</option>
+          <option value="Romance">Romance</option>
+          <option value="Sci-Fi">Sci-Fi</option>
+          <option value="Thriller">Thriller</option>
+          <option value="War">War</option>
+          <option value="Western">Western</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="year">Year</label>
+        <input type="number" id="year" min="1888" max="2100" placeholder="2019" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="status">Status</label>
+      <select id="status">
+        <option value="to-watch">To Watch</option>
+        <option value="watching">Watching</option>
+        <option value="watched">Watched</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Rating</label>
+      <div class="star-picker" id="starPicker">
+        <span data-value="1">★</span>
+        <span data-value="2">★</span>
+        <span data-value="3">★</span>
+        <span data-value="4">★</span>
+        <span data-value="5">★</span>
+      </div>
+      <input type="hidden" id="rating" value="0" />
+    </div>
+
+    <div class="field">
+      <label for="notes">Notes</label>
+      <textarea id="notes" rows="3" placeholder="Anything worth remembering about this one"></textarea>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-gold" id="submitBtn">Save Movie</button>
+      <a href="watchlist.html" class="btn">Cancel</a>
+    </div>
+  </form>
+</main>
+
+<script src="app.js"></script>
+<script>
+  const params = new URLSearchParams(location.search);
+  const editId = params.get("id");
+  let currentRating = 0;
+
+  function setRating(value) {
+    currentRating = value;
+    document.getElementById("rating").value = value;
+    document.querySelectorAll("#starPicker span").forEach((star) => {
+      star.classList.toggle("filled", Number(star.dataset.value) <= value);
+    });
+  }
+
+  document.getElementById("starPicker").addEventListener("click", (e) => {
+    if (e.target.tagName !== "SPAN") return;
+    setRating(Number(e.target.dataset.value));
+  });
+
+  async function loadForEdit() {
+    const movie = await getMovieById(editId);
+    if (!movie) return;
+    document.getElementById("formTitle").textContent = "Edit Movie";
+    document.getElementById("formSub").textContent = `Editing "${movie.title}"`;
+    document.getElementById("submitBtn").textContent = "Update Movie";
+    document.getElementById("title").value = movie.title || "";
+    document.getElementById("genre").value = movie.genre || "";
+    document.getElementById("year").value = movie.year || "";
+    document.getElementById("status").value = movie.status || "to-watch";
+    document.getElementById("notes").value = movie.notes || "";
+    setRating(Number(movie.rating) || 0);
+  }
+
+  document.getElementById("movieForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const data = {
+      title: document.getElementById("title").value.trim(),
+      genre: document.getElementById("genre").value.trim(),
+      year: document.getElementById("year").value
+        ? Number(document.getElementById("year").value)
+        : null,
+      status: document.getElementById("status").value,
+      rating: currentRating,
+      notes: document.getElementById("notes").value.trim(),
+    };
+
+    if (!data.title) return;
+
+    if (editId) {
+      await updateMovie(editId, data);
+    } else {
+      await addMovie(data);
+    }
+    location.href = "index.html";
+  });
+
+  document.addEventListener("DOMContentLoaded", () => {
+    if (editId) loadForEdit();
+  });
+</script>
+
+</body>
+</html>
